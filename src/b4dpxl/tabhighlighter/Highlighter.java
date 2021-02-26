@@ -48,11 +48,22 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
     class TabIndexPCL implements PropertyChangeListener {
 
+        private boolean alive = true;
+
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
+            if (alive) {
+                return;
+            }
             if ((int)evt.getNewValue() >= 0) {
                 delayedSave(2000);
             }
+        }
+
+        // sometimes listeners don't get removed when unloading the extension. This will at least kill it off.
+        public void kill(Component owner) {
+            this.alive = false;
+            owner.removePropertyChangeListener(this);
         }
 
     }
@@ -249,6 +260,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
     class TabStylePCL implements PropertyChangeListener {
 
+        private boolean alive = true;
         private JTextField label;
         private Highlight highlight;
         private boolean deliberateChange = false;
@@ -267,6 +279,11 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
+            // make sure the listener is inactive if it wasn't removed cleanly
+            if (!alive) {
+                return;
+            }
+
             if (deliberateChange) {
                 deliberateChange = false;
                 return;
@@ -287,19 +304,24 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
             );
         }
 
+        public void kill(Component owner) {
+            alive = false;
+            owner.removePropertyChangeListener(this);
+        }
+
     }
 
     @Override
     public void extensionUnloaded() {
         // remove all listeners
         if (tabListener != null) {
-            repeater.removePropertyChangeListener(tabListener);
+            tabListener.kill(repeater);
         }
         for (int idx=0; idx<repeater.getTabCount()-1; idx++) {
             Component tabLabel = ((Container) repeater.getTabComponentAt(idx)).getComponent(0);
             for (PropertyChangeListener pcl : tabLabel.getPropertyChangeListeners()) {
                 if (pcl instanceof TabStylePCL) {
-                    tabLabel.removePropertyChangeListener(pcl);
+                    ((TabStylePCL)pcl).kill(tabLabel);
 
                 }
             }
