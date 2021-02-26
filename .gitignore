@@ -1,0 +1,7 @@
+*.old
+.idea/
+bin/
+dist/
+out/
+*.cfg
+*.iml
