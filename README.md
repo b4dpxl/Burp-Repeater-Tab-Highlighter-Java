@@ -12,7 +12,7 @@ request/response body, not the tab itself!
 
 The colours are stored in a new entry on the site map, http://tabhighlighterextensionjava.local/state. 
 This is updated when the plugin unloads (either shutting down Burp or reloading the extension), and should
-be saved on every changed. This entry is added to your project scope, so that if you save a copy of the 
+be saved on every change. This entry is also added to your project scope, so that if you save a copy of the 
 project and only include in-scope items it will include the highlights. 
 
 However, this means that if Burp crashes you _might_ lose settings, or things might get confused if 
