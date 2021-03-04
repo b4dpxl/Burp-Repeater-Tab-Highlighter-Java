@@ -15,7 +15,7 @@ import java.util.*;
 
 public class Highlighter implements IContextMenuFactory, IExtensionStateListener {
 
-    public static final String NAME = "Repeater Tab Highlighter Test";
+    public static final String NAME = "Repeater Tab Highlighter";
     public static final String CONFIG_URL = "http://tabhighlighterextensionjava.local/state";
 
     TabIndexPCL tabListener;

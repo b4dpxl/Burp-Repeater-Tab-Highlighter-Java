@@ -4,8 +4,8 @@
     </description>
 
     <property name="projectName" value="TabHighlighter" />
+    <property name="version" value="1.0.0" />
     <property name="src.dir" location="src" />
-    <property name="resources.dir" location="resources" />
     <property name="build.dir" location="bin" />
     <property name="dist.dir" location="dist" />
     <property name="dist.lib.dir" location="dist/lib" />
@@ -47,9 +47,8 @@
         <mkdir dir="${dist.dir}" />
         <mkdir dir="${dist.lib.dir}" />
 
-        <jar jarfile="${dist.dir}/${projectName}.jar" basedir="${build.dir}">
+        <jar jarfile="${dist.dir}/${projectName}_v${version}.jar" basedir="${build.dir}">
             <zipfileset src="${dist.lib.dir}/dependencies-all.jar" excludes="META-INF/*.SF" />
-            <fileset dir="${resources.dir}" />
         </jar>
 
     </target>
