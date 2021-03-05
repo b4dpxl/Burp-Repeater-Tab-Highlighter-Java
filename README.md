@@ -19,6 +19,3 @@ However, this means that if Burp crashes you _might_ lose settings, or things mi
 you've inserted (not added to the end) or moved Repeater tabs. Additionally, if you insert/move 
 tabs without the extension running things might get confused. 
 
-### TODO
-- [ ] Work if the Repeater tab is detached during extension loading. It works fine if the extension was loaded _before_ 
-  Repeater was detached.

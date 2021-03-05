@@ -28,7 +28,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
      */
     public Highlighter(IBurpExtenderCallbacks callbacks) {
 
-        new Utilities(callbacks);
+        new Utilities(callbacks, true);
 
         for (Frame frame : Frame.getFrames()) {
             find_repeater(frame);
@@ -52,7 +52,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
-            if (alive) {
+            if (!alive) {
                 return;
             }
             if ((int)evt.getNewValue() >= 0) {
@@ -70,11 +70,19 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
     private void find_repeater(Container container) {
         if (container.getComponents() != null && this.repeater == null) {
-            if (container instanceof Frame && ((Frame)container).getTitle().equalsIgnoreCase("Burp Repeater")) {
-                // TODO find popped out Repeater
-            }
-            for (Component c : container.getComponents()) {
-                try {
+            try {
+                if (container instanceof JRootPane) {
+                    JMenuBar menubar = ((JRootPane) container).getJMenuBar();
+                    if (menubar != null && menubar.getMenu(0).getText().equalsIgnoreCase("Repeater")) {
+                        if (((JRootPane) container).getContentPane().getComponent(0) instanceof JTabbedPane) {
+                            this.repeater = (JTabbedPane) ((JRootPane) container).getContentPane().getComponent(0);
+                            Utilities.debug("Found detached Repeater");
+                            return;
+                        }
+                    }
+                }
+
+                for (Component c : container.getComponents()) {
                     if (c instanceof JTabbedPane) {
                         JTabbedPane t = (JTabbedPane)c;
                         for (int x = 0; x < t.getTabCount(); x++) {
@@ -85,11 +93,11 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
                             }
                         }
                     }
-                } catch (Exception e) {
+                    if (c instanceof Container) {
+                        find_repeater((Container) c);
+                    }
                 }
-                if (c instanceof Container) {
-                    find_repeater((Container) c);
-                }
+            } catch (Exception e) {
             }
         }
     }
