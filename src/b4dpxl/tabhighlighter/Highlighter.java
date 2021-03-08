@@ -29,6 +29,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
     public Highlighter(IBurpExtenderCallbacks callbacks) {
 
         new Utilities(callbacks, false);
+        Utilities.callbacks.setExtensionName(NAME);
 
         for (Frame frame : Frame.getFrames()) {
             find_repeater(frame);
