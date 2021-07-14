@@ -6,6 +6,7 @@ import burp.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.font.TextAttribute;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
@@ -125,7 +126,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
                 }
 
             } catch (IOException | ClassNotFoundException e) {
-                Utilities.err("Unable to deserialize settings", e);
+                Utilities.err("Unable to deserialize settings. Version incompatibility?");
 
             }
         }
@@ -179,11 +180,16 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
             JTextField tabLabel = (JTextField)tab.getComponent(0);
             Color tabColour = tabLabel.getForeground();
             int tabStyle = tabLabel.getFont().getStyle();
+            boolean struck = false;
+            if (tabLabel.getFont().getAttributes().containsKey(TextAttribute.STRIKETHROUGH)) {
+                Boolean v =(Boolean)(tabLabel.getFont().getAttributes().get(TextAttribute.STRIKETHROUGH));
+                struck = v == null ? false : v.booleanValue();
+            }
             if (tabColour.equals(baseColour)) {
                 // not highlighted, ignore it. This should handle theme changes
                 settings.add(null);
             } else {
-                settings.add(new Highlight(tabColour, tabStyle));
+                settings.add(new Highlight(tabColour, tabStyle, struck));
             }
         }
         if (force || previousSettings == null || ! previousSettings.equals(settings)) {
@@ -244,7 +250,10 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
                 repeater.setBackgroundAt(idx, highlight.getColor());
             }
 
-            Font newFont = tabLabel.getFont().deriveFont(highlight.getStyle());
+            Font tmpFont = tabLabel.getFont().deriveFont(highlight.getStyle());
+            Map fontAttributes = tmpFont.getAttributes();
+            fontAttributes.put(TextAttribute.STRIKETHROUGH, highlight.isStrikethrough());
+            Font newFont = tmpFont.deriveFont(fontAttributes);
             if (!tabLabel.getFont().equals(newFont)) {
                 changed = true;
                 tabLabel.setFont(newFont);
@@ -371,21 +380,28 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
         if (colour != null) {
             JMenu subSubMenu = new JMenu(name);
             subSubMenu.setForeground(colour);
-            subSubMenu.add(createMenuItemStyled("Normal", colour, Font.PLAIN));
-            subSubMenu.add(createMenuItemStyled("Bold", colour, Font.BOLD));
-            subSubMenu.add(createMenuItemStyled("Italic", colour, Font.ITALIC));
+            subSubMenu.add(createMenuItemStyled("Normal", colour, Font.PLAIN, false));
+            subSubMenu.add(createMenuItemStyled("Bold", colour, Font.BOLD, false));
+            subSubMenu.add(createMenuItemStyled("Italic", colour, Font.ITALIC, false));
+            subSubMenu.add(createMenuItemStyled("Strike", colour, Font.PLAIN, true));
             return subSubMenu;
         } else {
             JMenuItem menu = new JMenuItem(name);
-            menu.addActionListener(new HighlightMenuListener(null, Font.PLAIN));
+            menu.addActionListener(new HighlightMenuListener(null, Font.PLAIN, false));
             return menu;
         }
     }
 
-    private JMenuItem createMenuItemStyled(String name, Color colour, int style) {
+    private JMenuItem createMenuItemStyled(String name, Color colour, int style, boolean strikethrough) {
         JMenuItem item = new JMenuItem(name);
-        item.setFont(item.getFont().deriveFont(style));
-        item.addActionListener(new HighlightMenuListener(colour, style));
+        Font styledFont = item.getFont().deriveFont(style);
+        if (strikethrough) {
+            Map attributes = styledFont.getAttributes();
+            attributes.put(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON);
+            styledFont = styledFont.deriveFont(attributes);
+        }
+        item.setFont(styledFont);
+        item.addActionListener(new HighlightMenuListener(colour, style, strikethrough));
         return item;
     }
 
@@ -393,8 +409,8 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
 
         private Highlight highlight;
 
-        public HighlightMenuListener(Color colour, int style) {
-            this.highlight = new Highlight(colour, style);
+        public HighlightMenuListener(Color colour, int style, boolean strikethrough) {
+            this.highlight = new Highlight(colour, style, strikethrough);
         }
 
         public void actionPerformed(ActionEvent e) {
@@ -417,11 +433,13 @@ class Highlight implements Serializable {
     boolean isNullColour;  // we use null colours to reset to the default, but java.awt.Color isn't serializable
     int colourRGB;
     int style;
+    boolean strikethrough;
 
-    public Highlight(Color colour, int style) {
+    public Highlight(Color colour, int style, boolean strikethrough) {
         this.colourRGB = colour == null ? 0 : colour.getRGB();
         isNullColour = colour == null;
         this.style = style;
+        this.strikethrough = strikethrough;
     }
 
     public Color getColor() {
@@ -432,16 +450,18 @@ class Highlight implements Serializable {
         return style;
     }
 
+    public boolean isStrikethrough() { return strikethrough; }
+
     public String toString() {
-        return getColor() + " " + style;
+        return getColor() + " " + style + " " + strikethrough;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Highlight highlight = (Highlight) o;
-        return isNullColour == highlight.isNullColour && colourRGB == highlight.colourRGB && style == highlight.style;
+        Highlight otherHighlight = (Highlight) o;
+        return isNullColour == otherHighlight.isNullColour && colourRGB == otherHighlight.colourRGB && style == otherHighlight.style && strikethrough == otherHighlight.strikethrough;
     }
 
     @Override
