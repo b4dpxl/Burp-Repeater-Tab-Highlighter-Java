@@ -16,7 +16,7 @@ import java.util.*;
 
 public class Highlighter implements IContextMenuFactory, IExtensionStateListener {
 
-    public static final String NAME = "Repeater Tab Highlighter";
+    public static final String NAME = "Tab Highlighter";
     public static final String CONFIG_URL = "http://tabhighlighterextensionjava.local/state";
 
     TabIndexPCL tabListener;
@@ -89,8 +89,18 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
                         JTabbedPane t = (JTabbedPane)c;
                         for (int x = 0; x < t.getTabCount(); x++) {
                             if (t.getTitleAt(x).equalsIgnoreCase("Repeater")) {
-                                this.repeater = (JTabbedPane) t.getComponentAt(x);
-                                Utilities.debug("Found repeater :)");
+                                Component component = t.getComponentAt(x);
+                                if (component instanceof JTabbedPane) {
+                                    this.repeater = (JTabbedPane) component;
+                                    Utilities.debug("Found repeater :)");
+
+                                } else if (component instanceof JPanel) {
+                                    this.repeater = (JTabbedPane) ((JPanel)component).getComponent(0);
+                                    Utilities.debug("Found repeater :)");
+
+                                } else {
+                                    Utilities.err("Swing structure does not match known structure");
+                                }
                                 return;
                             }
                         }
@@ -260,7 +270,7 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
             }
 
             if (changed) {
-                Utilities.debug("Tab highlighted");
+//                Utilities.debug("Tab highlighted");
                 if (!doNotSave) {
                     saveSettings();
                 }
@@ -355,25 +365,25 @@ public class Highlighter implements IContextMenuFactory, IExtensionStateListener
             return null;
         }
 
-        JMenu subMenu = new JMenu("Highlight Tab");
-        subMenu.add(createMenuItem("Red", new Color(255, 50, 0)));
-        subMenu.add(createMenuItem("Blue", new Color(102, 153, 255)));
-        subMenu.add(createMenuItem("Green", new Color(0, 204, 51)));
-        subMenu.add(createMenuItem("Orange", new Color(255, 204, 51)));
-        subMenu.add(createMenuItem("Purple", new Color(204, 51, 255)));
-        subMenu.add(createMenuItem("None", null));
+        List<JMenuItem> subMenu = new ArrayList<>();
+
+        subMenu.add(createMenuItem("1: Red", new Color(255, 50, 0)));
+        subMenu.add(createMenuItem("2: Blue", new Color(102, 153, 255)));
+        subMenu.add(createMenuItem("3: Green", new Color(0, 204, 51)));
+        subMenu.add(createMenuItem("4: Orange", new Color(255, 204, 51)));
+        subMenu.add(createMenuItem("5: Purple", new Color(204, 51, 255)));
+        subMenu.add(createMenuItem("99: None", null));
 
         if (Utilities.isDebug()) {
-            subMenu.add(new JSeparator());
+            Utilities.debug("Adding debug options");
+//            subMenu.add(new JSeparator());
             JMenuItem save = new JMenuItem("Save now");
             save.addActionListener(new SaveMenuListener());
             save.setFont(save.getFont().deriveFont(Font.ITALIC));
             subMenu.add(save);
         }
 
-        List<JMenuItem> menu = new ArrayList<>();
-        menu.add(subMenu);
-        return menu;
+        return subMenu;
     }
 
     private JMenuItem createMenuItem(String name, Color colour) {
